@@ -30,6 +30,7 @@ public class khanaDisplay extends AppCompatActivity {
     String menu1,old_menuL,old_menuD;
     FirebaseDatabase database;
     DatabaseReference refL,refD;
+    private DataSnapshot dataSnapshot;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +46,8 @@ public class khanaDisplay extends AppCompatActivity {
         updateM = (Button)findViewById(R.id.upadte_id);
         refreshM = (Button)findViewById(R.id.refresh_id);
         p = new ProgressDialog(this);
+
+        refresh();
 
         updateM.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -120,9 +123,6 @@ public class khanaDisplay extends AppCompatActivity {
     public void update(){
         Intent i = new Intent(this,update.class);
         startActivity(i);
-    }
-    public void asachkaytar(){
-
     }
 
 }
