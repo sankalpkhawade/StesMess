@@ -2,6 +2,9 @@ package com.example.akshayprince.stesmess;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.os.AsyncTask;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -13,38 +16,67 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdSize;
+import com.google.android.gms.ads.AdView;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.w3c.dom.Text;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+
+
 
 public class khanaDisplay extends AppCompatActivity {
 
-    TextView menuL,menuD;
-    Button updateM;
-    Button refreshM;
-    ProgressDialog p;
-    String menu1,old_menuL,old_menuD;
-    FirebaseDatabase database;
-    DatabaseReference refL,refD;
-    private DataSnapshot dataSnapshot;
+    private TextView menuL, menuD;
+    private Button updateM;
+    private Button refreshM;
+    private ProgressDialog p;
+    private String menu1;
+    private FirebaseDatabase database;
+    FirebaseUser user;
+    FirebaseAuth firebaseAuth;
+    private DatabaseReference refL, refD;
+    private AdView adView;
+    String userName;
+    DrawerLayout drawerLayout;
+    ActionBarDrawerToggle toggle;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_khana_display);
 
+        drawerLayout = (DrawerLayout)findViewById(R.id.drawerlayout);
+        toggle = new ActionBarDrawerToggle(this,drawerLayout,R.string.open,R.string.close);
+        drawerLayout.addDrawerListener(toggle);
+        toggle.syncState();
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
         database = FirebaseDatabase.getInstance();
         refL = database.getReference();
         refD = database.getReference();
-
-        menuL = (TextView)findViewById(R.id.khanaL);
-        menuD = (TextView)findViewById(R.id.khanaD);
-        updateM = (Button)findViewById(R.id.upadte_id);
-        refreshM = (Button)findViewById(R.id.refresh_id);
+        firebaseAuth = FirebaseAuth.getInstance();
+        user = firebaseAuth.getCurrentUser();
+        menuL = (TextView) findViewById(R.id.khanaL);
+        menuD = (TextView) findViewById(R.id.khanaD);
+        updateM = (Button) findViewById(R.id.upadte_id);
+        refreshM = (Button) findViewById(R.id.refresh_id);
         p = new ProgressDialog(this);
 
         refresh();
@@ -62,14 +94,18 @@ public class khanaDisplay extends AppCompatActivity {
                 refresh();
             }
         });
+
+        adView = (AdView) findViewById(R.id.add_view);
+        AdRequest adRequest = new AdRequest.Builder().build();
+        adView.loadAd(adRequest);
+
+
     }
 
 
     public void refresh() {
-        p.setMessage("Refreshing...");
-        p.show();
 
-        refL = refL.child("GaneshMess").child("todaymenu").child("launch");
+        /*refL = refL.child("GaneshMess").child("todaymenu").child("launch");
         refL.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -97,22 +133,32 @@ public class khanaDisplay extends AppCompatActivity {
                 Toast.makeText(khanaDisplay.this,"Could Not Refresh! Check Connection",Toast.LENGTH_SHORT).show();
                 p.dismiss();
             }
-        });
+        });*/
+
+        new network().execute("https://stesmess.firebaseio.com/.json");
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
 
         MenuInflater menuInflater = getMenuInflater();
-        menuInflater.inflate(R.menu.menu,menu);
+        menuInflater.inflate(R.menu.menu, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()){
+
+        if(toggle.onOptionsItemSelected(item))
+        {
+            return true;
+        }
+
+        switch (item.getItemId()) {
             case R.id.profile_menu:
-                Intent intent = new Intent(this,profile.class);
+                finish();
+                Intent intent = new Intent(this, profile.class);
+                intent.putExtra("name_user",userName);
                 startActivity(intent);
                 return true;
             default:
@@ -120,9 +166,100 @@ public class khanaDisplay extends AppCompatActivity {
         }
     }
 
-    public void update(){
-        Intent i = new Intent(this,update.class);
+    public void update() {
+        Intent i = new Intent(this, update.class);
         startActivity(i);
     }
 
+    public class network extends AsyncTask<String, String, String> {
+        String lunch, dinner;
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            p.setMessage("Refreshing...");
+            p.show();
+        }
+
+        @Override
+        protected String doInBackground(String... params) {
+            HttpURLConnection urlConnection = null;
+            BufferedReader reader = null;
+            try {
+                URL url = new URL(params[0]);
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.connect();
+
+                InputStream stream = urlConnection.getInputStream();
+
+                reader = new BufferedReader(new InputStreamReader(stream));
+
+                StringBuffer buffer = new StringBuffer();
+
+                String line = "";
+                while ((line = reader.readLine()) != null) {
+                    buffer.append(line);
+                }
+
+                String jsonResponce = buffer.toString();
+
+
+                return jsonResponce;
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
+                try {
+                    if (reader != null) {
+                        reader.close();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            return null;
+        }
+
+
+        @Override
+        protected void onPostExecute(String s) {
+            try {
+                JSONObject parentObject = new JSONObject(s);
+
+                JSONObject mess_name = parentObject.getJSONObject("GaneshMess");
+                JSONObject menu = mess_name.getJSONObject("todaymenu");
+
+                lunch = menu.getString("launch");
+                dinner = menu.getString("dinner");
+
+                JSONObject P_user_name = parentObject.getJSONObject("userInfo");
+                JSONObject user_name = P_user_name.getJSONObject(user.getUid());
+
+                userName = user_name.getString("name");
+
+                menuL.setText(lunch);
+                menuD.setText(dinner);
+
+
+                p.dismiss();
+
+            }
+            catch(JSONException e){
+                e.printStackTrace();
+            }
+
+        }
+    }
 }
+
+
+
+
+
+
+
+

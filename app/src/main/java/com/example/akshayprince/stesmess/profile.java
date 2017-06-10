@@ -9,12 +9,13 @@ import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.FirebaseDatabase;
 
 public class profile extends AppCompatActivity {
 
     private Button b3;
     private FirebaseAuth firebaseAuth;
-    private TextView email;
+    private TextView email,name;
     private FirebaseUser user;
 
     @Override
@@ -23,8 +24,11 @@ public class profile extends AppCompatActivity {
         setContentView(R.layout.activity_profile);
         b3 = (Button)findViewById(R.id.logout);
         email = (TextView)findViewById(R.id.email_p);
-        firebaseAuth.getInstance();
-        user = firebaseAuth.getInstance().getCurrentUser();
+        name = (TextView)findViewById(R.id.name_p);
+        firebaseAuth = FirebaseAuth.getInstance();
+        user = firebaseAuth.getCurrentUser();
+        String userName = getIntent().getExtras().getString("name_user");
+        name.setText(userName);
         email.setText(user.getEmail());
         b3.setOnClickListener(new View.OnClickListener() {
             @Override

@@ -88,9 +88,10 @@ public class MainActivity extends AppCompatActivity {
                     finish();
                     Intent intent = new Intent(MainActivity.this,khanaDisplay.class);
                     startActivity(intent);
-                } else
+                } else {
                     progressDialog.dismiss();
-                Toast.makeText(MainActivity.this, "Could Not Sign In, Please Sign In Again", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "Could Not Sign In, Please Sign In Again", Toast.LENGTH_LONG).show();
+                }
             }
         });
 
