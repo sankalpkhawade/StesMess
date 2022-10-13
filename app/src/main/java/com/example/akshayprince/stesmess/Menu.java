@@ -2,7 +2,7 @@ package com.example.akshayprince.stesmess;
 
 /**
  * Created by $ Akshay Prince $ on 10-06-2017.
- * Menu
+ * Menu code
  */
 
 public class Menu {
